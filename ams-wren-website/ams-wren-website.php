@@ -2,7 +2,7 @@
 /**
  * Plugin Name: AMS Wren Website
  * Description: Site-side support for Wren Workspace (AMS AI Village, Website & Automation). Lets Wren's dedicated Editor account save and read back page drafts' Elementor layout and Yoast SEO fields over the REST API, keeps Elementor and SiteGround caches in step when Wren changes a page, and gives Wren a status check. Wren publishes or replaces a live page only on Jimy's click in Wren; reading or writing a page's fields requires permission to edit that page.
- * Version: 1.4.0
+ * Version: 1.4.1
  * Update URI: https://github.com/jimster-status/ams-wren-website
  * Author: Awaken Media Solutions
  * Requires at least: 6.0
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-const AMS_WREN_WEBSITE_VERSION = '1.4.0';
+const AMS_WREN_WEBSITE_VERSION = '1.4.1';
 const AMS_WREN_WEBSITE_REPO = 'https://github.com/jimster-status/ams-wren-website';
 const AMS_WREN_WEBSITE_UPDATE_URL = 'https://raw.githubusercontent.com/jimster-status/ams-wren-website/main/update.json';
 
@@ -211,6 +211,7 @@ add_action('rest_api_init', function () {
                 'yoast'      => defined('WPSEO_VERSION') ? WPSEO_VERSION : null,
                 'siteground' => function_exists('sg_cachepress_purge_cache'),
                 'updates'    => AMS_WREN_WEBSITE_UPDATE_URL,
+                'latest'     => ($latest = ams_wren_website_remote_info()) ? $latest['version'] : null,
             ];
         },
     ]);
