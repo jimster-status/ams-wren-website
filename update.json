@@ -1,0 +1,17 @@
+{
+  "version": "1.4.0",
+  "download_url": "https://github.com/jimster-status/ams-wren-website/raw/main/releases/ams-wren-website-1.4.0.zip",
+  "sha256": "838da2e41ba8e7a29702da3e1a13607e347476e8fe8672cc7c72b3a76fa47e42",
+  "released": "2026-11-25",
+  "requires": "6.0",
+  "requires_php": "7.4",
+  "tested": "6.9",
+  "changelog": [
+    {
+      "version": "1.4.0",
+      "date": "2026-11-25",
+      "note": "Self-updating from GitHub. Clears Elementor and SiteGround caches when Wren saves a page or a page is published or unpublished. Refresh endpoint. Exposes Elementor and Yoast fields for Wren."
+    }
+  ],
+  "changelog_html": "<h4>1.4.0 (2026-11-25)</h4><p>Self-updating from GitHub. Clears Elementor and SiteGround caches when Wren saves a page or a page is published or unpublished. Refresh endpoint. Exposes Elementor and Yoast fields for Wren.</p>"
+}
