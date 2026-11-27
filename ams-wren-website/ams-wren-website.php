@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: AMS Wren Website
- * Description: Site-side support for Wren Workspace (AMS AI Village, Website & Automation). Lets Wren's dedicated Editor account save and read back page drafts' Elementor layout and Yoast SEO fields over the REST API, keeps Elementor and SiteGround caches in step when Wren changes a page, and gives Wren a status check. Wren publishes or replaces a live page only on Jimy's click in Wren; reading or writing a page's fields requires permission to edit that page.
- * Version: 1.4.1
+ * Description: Site-side support for Wren Workspace (AMS AI Village, Website & Automation). Lets Wren's dedicated Editor account save and read back page drafts' Elementor layout and Yoast SEO fields over the REST API, keeps Elementor and SiteGround caches in step when Wren changes a page, and gives Wren a status check plus a read-only site diagnosis with a few safe cache repairs. Wren publishes or replaces a live page only on Jimy's click in Wren; reading or writing a page's fields requires permission to edit that page.
+ * Version: 1.5.0
  * Update URI: https://github.com/jimster-status/ams-wren-website
  * Author: Awaken Media Solutions
  * Requires at least: 6.0
@@ -13,7 +13,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-const AMS_WREN_WEBSITE_VERSION = '1.4.1';
+const AMS_WREN_WEBSITE_VERSION = '1.5.0';
 const AMS_WREN_WEBSITE_REPO = 'https://github.com/jimster-status/ams-wren-website';
 const AMS_WREN_WEBSITE_UPDATE_URL = 'https://raw.githubusercontent.com/jimster-status/ams-wren-website/main/update.json';
 
@@ -171,6 +171,19 @@ function ams_wren_website_refresh_page($post_id) {
             // Elementor rebuilds the file on the next visit anyway.
         }
     }
+    // Rebuild the page's Elementor CSS now instead of on the next visit, so the first visitor
+    // (and SiteGround's combined CSS) gets the new styles rather than a half-built page.
+    if (class_exists('\Elementor\Core\Files\CSS\Post')) {
+        try {
+            $fresh = \Elementor\Core\Files\CSS\Post::create($post_id);
+            if ($fresh) {
+                $fresh->update();
+                $done[] = 'elementor-css-rebuilt';
+            }
+        } catch (\Throwable $e) {
+            // Falls back to Elementor rebuilding it on the next visit.
+        }
+    }
     $url = get_permalink($post_id);
     if ($url && function_exists('sg_cachepress_purge_cache')) {
         sg_cachepress_purge_cache($url);
@@ -178,6 +191,72 @@ function ams_wren_website_refresh_page($post_id) {
     }
     clean_post_cache($post_id);
     return $done;
+}
+
+/**
+ * Read-only diagnosis for Wren's site check. Reports settings that decide whether visitors and
+ * signed-in editors see the newest version of a page. No secrets, no personal data.
+ */
+function ams_wren_website_diagnose($post_id = 0) {
+    $opt = function ($name, $default = null) {
+        $value = get_option($name, $default);
+        return is_scalar($value) || $value === null ? $value : (bool) $value;
+    };
+    $experiments = [];
+    foreach (['e_element_cache', 'e_optimized_markup', 'e_font_icon_svg', 'additional_custom_breakpoints'] as $exp) {
+        $experiments[$exp] = $opt('elementor_experiment-' . $exp, 'default');
+    }
+    $out = [
+        'plugin'    => AMS_WREN_WEBSITE_VERSION,
+        'wordpress' => get_bloginfo('version'),
+        'php'       => PHP_VERSION,
+        'elementor' => [
+            'version'          => defined('ELEMENTOR_VERSION') ? ELEMENTOR_VERSION : null,
+            'pro'              => defined('ELEMENTOR_PRO_VERSION') ? ELEMENTOR_PRO_VERSION : null,
+            'css_print_method' => $opt('elementor_css_print_method', 'external'),
+            'element_cache_ttl'=> $opt('elementor_element_cache_ttl', null),
+            'experiments'      => $experiments,
+        ],
+        'elementskit' => defined('ELEMENTSKIT_LITE_VERSION') ? ELEMENTSKIT_LITE_VERSION : (defined('ELEMENTSKIT_VERSION') ? ELEMENTSKIT_VERSION : null),
+        'siteground' => [
+            'active'       => function_exists('sg_cachepress_purge_cache'),
+            'dynamic_cache'=> $opt('siteground_optimizer_enable_cache', null),
+            'file_cache'   => $opt('siteground_optimizer_file_caching', null),
+            'combine_css'  => $opt('siteground_optimizer_combine_css', null),
+            'minify_css'   => $opt('siteground_optimizer_optimize_css', null),
+            'combine_js'   => $opt('siteground_optimizer_combine_javascript', null),
+            'minify_html'  => $opt('siteground_optimizer_optimize_html', null),
+        ],
+        'other_cache_plugins' => array_values(array_filter([
+            defined('WP_ROCKET_VERSION') ? 'WP Rocket' : null,
+            defined('W3TC') ? 'W3 Total Cache' : null,
+            defined('LSCWP_V') ? 'LiteSpeed Cache' : null,
+            defined('WPCACHEHOME') ? 'WP Super Cache' : null,
+            class_exists('autoptimizeMain') ? 'Autoptimize' : null,
+        ])),
+    ];
+    $post_id = (int) $post_id;
+    if ($post_id > 0 && current_user_can('edit_post', $post_id)) {
+        $post = get_post($post_id);
+        $meta = get_post_meta($post_id, '_elementor_css', true);
+        $file = ['exists' => null, 'modified' => null, 'url' => null];
+        $upload = wp_upload_dir();
+        $path = trailingslashit($upload['basedir']) . 'elementor/css/post-' . $post_id . '.css';
+        if (file_exists($path)) {
+            $file = ['exists' => true, 'modified' => gmdate('c', filemtime($path)), 'url' => trailingslashit($upload['baseurl']) . 'elementor/css/post-' . $post_id . '.css'];
+        } else {
+            $file['exists'] = false;
+        }
+        $out['page'] = [
+            'id'            => $post_id,
+            'status'        => $post ? $post->post_status : null,
+            'modified'      => $post ? get_post_modified_time('c', true, $post) : null,
+            'css_meta'      => is_array($meta) ? ['status' => isset($meta['status']) ? $meta['status'] : null, 'time' => isset($meta['time']) ? gmdate('c', (int) $meta['time']) : null] : null,
+            'css_file'      => $file,
+            'element_cache' => (bool) get_post_meta($post_id, '_elementor_element_cache', true),
+        ];
+    }
+    return $out;
 }
 
 /** After Wren (or anyone) saves a page over REST, refresh it. */
@@ -224,6 +303,40 @@ add_action('rest_api_init', function () {
         },
         'callback'            => function ($request) {
             return ['id' => (int) $request['id'], 'refreshed' => ams_wren_website_refresh_page((int) $request['id'])];
+        },
+    ]);
+
+    // Site check: read-only diagnosis. ?post_id=N adds that page's Elementor CSS state.
+    register_rest_route('ams-wren/v1', '/diagnose', [
+        'methods'             => 'GET',
+        'permission_callback' => function () {
+            return current_user_can('edit_pages');
+        },
+        'callback'            => function ($request) {
+            return ams_wren_website_diagnose((int) $request->get_param('post_id'));
+        },
+    ]);
+
+    // Safe repairs Wren may run on Jimy's click: purge SiteGround's whole cache (pages and
+    // combined CSS/JS). Nothing here changes content or settings.
+    register_rest_route('ams-wren/v1', '/repair', [
+        'methods'             => 'POST',
+        'permission_callback' => function () {
+            return current_user_can('edit_pages');
+        },
+        'callback'            => function ($request) {
+            $action = (string) $request->get_param('action');
+            if ($action === 'purge_site') {
+                if (!function_exists('sg_cachepress_purge_cache')) {
+                    return new WP_Error('ams_wren_no_sg', 'SiteGround Optimizer is not active on this site.', ['status' => 400]);
+                }
+                sg_cachepress_purge_cache();
+                if (function_exists('sg_cachepress_purge_everything')) {
+                    sg_cachepress_purge_everything();
+                }
+                return ['action' => $action, 'done' => true];
+            }
+            return new WP_Error('ams_wren_unknown_repair', 'Unknown repair.', ['status' => 400]);
         },
     ]);
 });

@@ -1,12 +1,17 @@
 {
-  "version": "1.4.1",
-  "download_url": "https://github.com/jimster-status/ams-wren-website/raw/main/releases/ams-wren-website-1.4.1.zip",
-  "sha256": "461b51e39ef7f74e0b539c0fe0bf3e335e1ba4bd57996776dc64f87be877eb8b",
-  "released": "2026-11-25",
+  "version": "1.5.0",
+  "download_url": "https://github.com/jimster-status/ams-wren-website/raw/main/releases/ams-wren-website-1.5.0.zip",
+  "sha256": "202d8baca10b2292fd96f1196b14b177df8b397f24a9bba93af093c16422cc8f",
+  "released": "2026-11-27",
   "requires": "6.0",
   "requires_php": "7.4",
   "tested": "6.9",
   "changelog": [
+    {
+      "version": "1.5.0",
+      "date": "2026-11-27",
+      "note": "Site check support for Wren: a read-only diagnosis of Elementor and SiteGround cache settings and a page's CSS freshness, a one-click SiteGround purge, and pages now rebuild their Elementor CSS immediately after Wren saves them, so visitors stop seeing old styles."
+    },
     {
       "version": "1.4.1",
       "date": "2026-11-25",
@@ -18,5 +23,5 @@
       "note": "Self-updating from GitHub. Clears Elementor and SiteGround caches when Wren saves a page or a page is published or unpublished. Refresh endpoint. Exposes Elementor and Yoast fields for Wren."
     }
   ],
-  "changelog_html": "<h4>1.4.1 (2026-11-25)</h4><p>Status check now reports the newest available version, so Wren can flag sites that are behind. First release delivered through the WordPress update notice.</p><h4>1.4.0 (2026-11-25)</h4><p>Self-updating from GitHub. Clears Elementor and SiteGround caches when Wren saves a page or a page is published or unpublished. Refresh endpoint. Exposes Elementor and Yoast fields for Wren.</p>"
+  "changelog_html": "<h4>1.5.0 (2026-11-27)</h4><p>Site check support for Wren: a read-only diagnosis of Elementor and SiteGround cache settings and a page&#x27;s CSS freshness, a one-click SiteGround purge, and pages now rebuild their Elementor CSS immediately after Wren saves them, so visitors stop seeing old styles.</p><h4>1.4.1 (2026-11-25)</h4><p>Status check now reports the newest available version, so Wren can flag sites that are behind. First release delivered through the WordPress update notice.</p><h4>1.4.0 (2026-11-25)</h4><p>Self-updating from GitHub. Clears Elementor and SiteGround caches when Wren saves a page or a page is published or unpublished. Refresh endpoint. Exposes Elementor and Yoast fields for Wren.</p>"
 }
